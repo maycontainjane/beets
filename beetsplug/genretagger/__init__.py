@@ -16,7 +16,7 @@
 from __future__ import division, absolute_import, print_function
 import six
 
-"""Gets genres for imported music based on Last.fm tags.
+"""Gets genres for imported music based on tags from last.fm, wikipedia, and/or musicbrainz
 
 Uses a provided whitelist file to determine which tags are valid genres.
 The included (default) genre list was originally produced by scraping Wikipedia
@@ -25,14 +25,18 @@ The scraper script used is available here:
 https://gist.github.com/1241307
 """
 import pylast
+import wikipedia
+import musicbrainzngs as mbn
 import codecs
 import os
 import yaml
 import traceback
 
-from . import lastbrowser
-from . import mbbrowser
-from . import wikibrowser
+# from . import lastbrowser
+# from . import mbbrowser
+# from . import wikibrowser
+
+from importlib import import_module
 
 from beets import plugins
 from beets import ui
@@ -40,6 +44,7 @@ from beets import config
 from beets.util import normpath, plurality
 from beets import library
 
+GENRETAGGER_MODULE = "beetsplug.genretagger"
 
 def deduplicate(seq):
     """Remove duplicates from sequence wile preserving order.
@@ -249,12 +254,15 @@ class GenreTaggerPlugin(plugins.BeetsPlugin):
 
         for browsername in self.config['preferred_order'].get():
             if browsername == "lastfm":
+                lastbrowser = import_module(GENRETAGGER_MODULE + '.' + "lastbrowser")
                 browser = lastbrowser.LastFMBrowser(self.config['min_weight'], self._log)
                 self._log.info("Using lastfm to fetch genre")
             elif browsername == "musicbrainz":
+                mbbrowser = import_module(GENRETAGGER_MODULE + '.' + "mbbrowser")
                 browser = mbbrowser.MusicBrainzBrowser(self._log)
                 self._log.info("Using musicbrainz to fetch genre")
             elif browsername == "wikipedia":
+                lastbrowser = import_module(GENRETAGGER_MODULE + '.' + "wikibrowser")
                 browser = wikibrowser.WikipediaBrowser(self._log)
                 self._log.info("Using wikipedia to fetch genre")
             else:

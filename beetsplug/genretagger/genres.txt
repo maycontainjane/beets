@@ -461,6 +461,7 @@ europop
 eurotrance
 eurourban
 exotica
+experimental hip hop
 experimental music
 experimental noise
 experimental pop
@@ -483,6 +484,7 @@ flamenco rumba
 flower power
 foaie verde
 fofa
+folk
 folk hop
 folk metal
 folk music
