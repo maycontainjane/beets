@@ -21,6 +21,7 @@ from . import genrebrowser
 class WikipediaBrowser(object):
     def __init__(self, log):
         self._genre_cache = {}
+        self.log = log
         self.name = "wikipedia"
         super(WikipediaBrowser, self).__init__()
 
@@ -62,17 +63,16 @@ class WikipediaBrowser(object):
         If `min_weight` is specified, tags are filtered by weight.
         """
         try:
-            res = wikipedia.WikipediaPage(title=query, redirect=True).links
+            res = wikipedia.WikipediaPage(title=query).links
             res = [el.lower() for el in res]
             return res
-        except wikipedia.exceptions.PageError:
+        except Exception:
             self.log.debug("Could not find page for query "+query)
             entity_label = " ("+entity.capitalize()+")"
-            print("Trying " +entity_label)
             query = query + entity_label
             try:
-                return wikipedia.WikipediaPage(title=query, redirect=True).links
-            except wikipedia.exceptions.PageError:
+                return wikipedia.WikipediaPage(title=query).links
+            except Exception:
                 self.log.debug("Could not find page for query "+query)
                 return []
 

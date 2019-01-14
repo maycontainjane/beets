@@ -247,25 +247,23 @@ class GenreTaggerPlugin(plugins.BeetsPlugin):
         if not self.config['force'] and self._is_allowed(obj.genre):
             return obj.genre, 'keep'
 
-        preferred_order = ["wikipedia", "musicbrainz"]
-        for browsername in preferred_order:
+        for browsername in self.config['preferred_order'].get():
             if browsername == "lastfm":
                 browser = lastbrowser.LastFMBrowser(self.config['min_weight'], self._log)
-                self._log.debug("Using lastfm")
+                self._log.info("Using lastfm to fetch genre")
             elif browsername == "musicbrainz":
                 browser = mbbrowser.MusicBrainzBrowser(self._log)
-                self._log.debug("Using musicbrainz")
+                self._log.info("Using musicbrainz to fetch genre")
             elif browsername == "wikipedia":
                 browser = wikibrowser.WikipediaBrowser(self._log)
-                self._log.debug("Using wiki")
+                self._log.info("Using wikipedia to fetch genre")
             else:
                 self._log.debug("Browser {0} does not exist", browsername)
                 return None, None
 
             res = self._browse_for_genre(obj, browser)
-            if res != (None, None) and res[0] != [] and res[0] != '':
+            if res != (None, None) and res[0] != [] and res[0] != '' and res != None:
                 return res
-
 
     def _browse_for_genre(self, obj, browser):
          # Track genre (for Items only).
@@ -332,45 +330,52 @@ class GenreTaggerPlugin(plugins.BeetsPlugin):
             self.config.set_args(opts)
 
             for album in lib.albums(ui.decargs(args)):
-                album.genre, src = self._get_genre(album)
-                self._log.info(u'genre for album {0} ({1}): {0.genre}',
-                               album, src)
-                album.store()
+                try:
+                    album.genre, src = self._get_genre(album)
+                    self._log.info(u'genre for album {0} ({1}): {0.genre}',
+                                   album, src)
+                    album.store()
 
-                for item in album.items():
-                    # If we're using track-level sources, also look up each
-                    # track on the album.
-                    if 'track' in self.sources:
-                        item.genre, src = self._get_genre(item)
-                        item.store()
-                        self._log.info(u'genre for track {0} ({1}): {0.genre}',
-                                       item, src)
+                    for item in album.items():
+                        # If we're using track-level sources, also look up each
+                        # track on the album.
+                        if 'track' in self.sources:
+                            item.genre, src = self._get_genre(item)
+                            item.store()
+                            self._log.info(u'genre for track {0} ({1}): {0.genre}',
+                                           item, src)
 
-                    if write:
-                        item.try_write()
+                        if write:
+                            item.try_write()
+                # if _get_genres returns none, none fo the sources returned any genre info
+                except TypeError:
+                    self._log.info(u'Unable to find any genre info for {0} from {1}.', album, self.config['preferred_order'])
 
         genretagger_cmd.func = genretagger_func
         return [genretagger_cmd]
 
     def imported(self, session, task):
         """Event hook called when an import task finishes."""
-        if task.is_album:
-            album = task.album
-            album.genre, src = self._get_genre(album)
-            self._log.debug(u'added last.fm album genre ({0}): {1}',
-                            src, album.genre)
-            album.store()
+        try:
+            if task.is_album:
+                    album = task.album
+                    album.genre, src = self._get_genre(album)
+                    self._log.debug(u'added album genre ({0}): {1}',
+                                    src, album.genre)
+                    album.store()
 
-            if 'track' in self.sources:
-                for item in album.items():
-                    item.genre, src = self._get_genre(item)
-                    self._log.debug(u'added last.fm item genre ({0}): {1}',
-                                    src, item.genre)
-                    item.store()
+                    if 'track' in self.sources:
+                        for item in album.items():
+                            item.genre, src = self._get_genre(item)
+                            self._log.debug(u'added item genre ({0}): {1}',
+                                            src, item.genre)
+                            item.store() 
 
-        else:
-            item = task.item
-            item.genre, src = self._get_genre(item)
-            self._log.debug(u'added last.fm item genre ({0}): {1}',
-                            src, item.genre)
-            item.store()
+            else:
+                item = task.item
+                item.genre, src = self._get_genre(item)
+                self._log.debug(u'added item genre ({0}): {1}',
+                                src, item.genre)
+                item.store()
+        except TypeError:
+            self._log.info(u'Unable to find any genre info for {0} from {1}.', album, self.config['preferred_order'])
