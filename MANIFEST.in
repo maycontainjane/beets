@@ -19,9 +19,11 @@ prune docs/_build
 recursive-include beetsplug/web/templates *
 recursive-include beetsplug/web/static *
 
-# And for the lastgenre plugin.
+# And for the lastgenre and genretagger plugins.
 include beetsplug/lastgenre/genres.txt
 include beetsplug/lastgenre/genres-tree.yaml
+include beetsplug/genretagger/genres.txt
+include beetsplug/genretagger/genres-tree.yaml
 
 # Exclude junk.
 global-exclude .DS_Store
