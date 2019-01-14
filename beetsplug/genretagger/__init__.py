@@ -23,6 +23,11 @@ The included (default) genre list was originally produced by scraping Wikipedia
 and has been edited to remove some questionable entries.
 The scraper script used is available here:
 https://gist.github.com/1241307
+
+This plugin is basically a rework of the beets lastgenre plugin to allow
+for the addition of any scraper for genre that can return a tag list 
+(something like ["rock", "folk", "punk"]) for a given entity (album, track,
+artist)
 """
 import pylast
 import wikipedia
@@ -32,10 +37,6 @@ import os
 import yaml
 import traceback
 
-# from . import lastbrowser
-# from . import mbbrowser
-# from . import wikibrowser
-
 from importlib import import_module
 
 from beets import plugins
@@ -44,6 +45,7 @@ from beets import config
 from beets.util import normpath, plurality
 from beets import library
 
+# need to use import_module to get associated files
 GENRETAGGER_MODULE = "beetsplug.genretagger"
 
 def deduplicate(seq):
@@ -252,7 +254,13 @@ class GenreTaggerPlugin(plugins.BeetsPlugin):
         if not self.config['force'] and self._is_allowed(obj.genre):
             return obj.genre, 'keep'
 
-        for browsername in self.config['preferred_order'].get():
+        try:
+            preferred_order = self.config['preferred_order'].get()
+        except: 
+            # default to wiki > musicbrainz > lastfm based on how specific the genres are
+            preferred_order = ["wikipedia", "musicbrainz", "lastfm"]
+
+        for browsername in preferred_order:
             if browsername == "lastfm":
                 lastbrowser = import_module(GENRETAGGER_MODULE + '.' + "lastbrowser")
                 browser = lastbrowser.LastFMBrowser(self.config['min_weight'], self._log)
